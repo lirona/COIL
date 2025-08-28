@@ -138,14 +138,6 @@ contract COIL is ERC20Capped, AccessControl, Pausable {
     }
 
     /**
-     * @dev Mint tokens - only for governance after initial allocations TODO only if orgs get all allocations at start
-     */
-    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) whenNotPaused {
-        require(governanceDistributed + amount <= GOVERNANCE_ALLOCATION, "Governance allocation exceeded");
-        _mint(to, amount);
-    }
-
-    /**
      * @notice Pause the contract
      */
     function pause() external onlyRole(PAUSER_ROLE) {

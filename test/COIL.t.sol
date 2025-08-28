@@ -334,43 +334,6 @@ contract COILTest is Test {
         assertEq(token.balanceOf(user2), amount);
     }
 
-    // ===== MINT TESTS =====
-    function test_Mint_Success() public {
-        uint256 amount = 1000 * 10 ** 18;
-
-        vm.prank(minter);
-        token.mint(user1, amount);
-
-        assertEq(token.balanceOf(user1), amount);
-        assertEq(token.totalSupply(), amount);
-    }
-
-    function test_Mint_RevertIfNotAuthorized() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                bytes4(keccak256("AccessControlUnauthorizedAccount(address,bytes32)")), user1, MINTER_ROLE
-            )
-        );
-        vm.prank(user1);
-        token.mint(user2, 1000 * 10 ** 18);
-    }
-
-    function test_Mint_RevertWhenPaused() public {
-        vm.prank(pauser);
-        token.pause();
-
-        vm.expectRevert(abi.encodeWithSelector(bytes4(keccak256("EnforcedPause()"))));
-        vm.prank(minter);
-        token.mint(user1, 1000 * 10 ** 18);
-    }
-
-    function test_Mint_RevertIfExceedsAllocation() public {
-        uint256 allocation = token.GOVERNANCE_ALLOCATION();
-        vm.expectRevert("Governance allocation exceeded");
-        vm.prank(minter);
-        token.mint(user1, allocation + 1);
-    }
-
     // ===== PAUSE/UNPAUSE TESTS =====
     function test_Pause_Success() public {
         assertFalse(token.paused());
@@ -416,8 +379,8 @@ contract COILTest is Test {
 
     // ===== TRANSFER TESTS =====
     function test_Transfer_RevertWhenPaused() public {
-        vm.prank(minter);
-        token.mint(user1, 1000 * 10 ** 18);
+        vm.prank(welcomeBonusDistributor);
+        token.distributeWelcomeBonus(user1);
 
         vm.prank(pauser);
         token.pause();
@@ -428,16 +391,15 @@ contract COILTest is Test {
     }
 
     function test_Transfer_SuccessWhenNotPaused() public {
-        uint256 amount = 1000 * 10 ** 18;
         uint256 transferAmount = 100 * 10 ** 18;
 
-        vm.prank(minter);
-        token.mint(user1, amount);
+        vm.prank(welcomeBonusDistributor);
+        token.distributeWelcomeBonus(user1);
 
         vm.prank(user1);
         token.transfer(user2, transferAmount);
 
-        assertEq(token.balanceOf(user1), amount - transferAmount);
+        assertEq(token.balanceOf(user1), token.WELCOME_BONUS_AMOUNT() - transferAmount);
         assertEq(token.balanceOf(user2), transferAmount);
     }
 
@@ -500,16 +462,6 @@ contract COILTest is Test {
         token.updateCoupon(couponCode, amount);
 
         assertEq(token.coupons(couponHash), amount);
-    }
-
-    function testFuzz_Mint(address to, uint256 amount) public {
-        vm.assume(to != address(0));
-        vm.assume(amount <= token.GOVERNANCE_ALLOCATION());
-
-        vm.prank(minter);
-        token.mint(to, amount);
-
-        assertEq(token.balanceOf(to), amount);
     }
 
     function testFuzz_Redeem(string calldata couponCode) public {
