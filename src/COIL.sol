@@ -60,7 +60,7 @@ contract COIL is ERC20Capped, AccessControl, Pausable {
      * @param to The address to receive the welcome bonus
      * @dev Can only be called by the welcome bonus distributor
      */
-    function distributeWelcomeBonus(address to) external whenNotPaused {
+    function distributeWelcomeBonus(address to) external whenNotPaused onlyRole(WELCOME_BONUS_DISTRIBUTOR_ROLE) {
         require(to != address(0), "Invalid address");
         require(!hasReceivedWelcomeBonus[to], "User already received welcome bonus");
         require(
