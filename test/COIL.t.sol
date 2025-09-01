@@ -20,6 +20,13 @@ contract COILTest is Test {
     bytes32 public constant COUPON_CREATOR_ROLE = keccak256("COUPON_CREATOR_ROLE");
     bytes32 public constant WELCOME_BONUS_DISTRIBUTOR_ROLE = keccak256("WELCOME_BONUS_DISTRIBUTOR_ROLE");
 
+    // Event declarations for testing
+    event WelcomeBonusDistributed(address indexed user, uint256 amount);
+    event CouponCreated(bytes32 indexed couponHash, uint256 amount);
+    event CouponRedeemed(bytes32 indexed couponHash, address indexed user, uint256 amount);
+    event OrgsDistributed(address indexed user, uint256 amount);
+    event GovernanceDistributed(address indexed user, uint256 amount);
+
     function setUp() public {
         owner = makeAddr("owner");
         welcomeBonusDistributor = makeAddr("welcomeBonusDistributor");
@@ -67,7 +74,7 @@ contract COILTest is Test {
 
     function test_DistributeWelcomeBonus_Event() public {
         vm.expectEmit(true, false, false, true);
-        emit COIL.WelcomeBonusDistributed(user1, token.WELCOME_BONUS_AMOUNT());
+        emit WelcomeBonusDistributed(user1, token.WELCOME_BONUS_AMOUNT());
 
         vm.prank(welcomeBonusDistributor);
         token.distributeWelcomeBonus(user1);
@@ -132,7 +139,7 @@ contract COILTest is Test {
         uint256 amount = 1000 * 10 ** 18;
 
         vm.expectEmit(true, false, false, true);
-        emit COIL.OrgsDistributed(user1, amount);
+        emit OrgsDistributed(user1, amount);
         vm.prank(minter);
         token.distributeOrgs(user1, amount);
 
@@ -175,7 +182,7 @@ contract COILTest is Test {
         uint256 amount = 1000 * 10 ** 18;
 
         vm.expectEmit(true, false, false, true);
-        emit COIL.GovernanceDistributed(user1, amount);
+        emit GovernanceDistributed(user1, amount);
         vm.prank(minter);
         token.distributeGovernance(user1, amount);
 
@@ -220,7 +227,7 @@ contract COILTest is Test {
         bytes32 couponHash = keccak256(abi.encodePacked(couponCode));
 
         vm.expectEmit(true, false, false, true);
-        emit COIL.CouponCreated(couponHash, amount);
+        emit CouponCreated(couponHash, amount);
 
         vm.prank(couponCreator);
         token.updateCoupon(couponCode, amount);
@@ -269,7 +276,7 @@ contract COILTest is Test {
         token.updateCoupon(couponCode, amount);
 
         vm.expectEmit(true, true, false, true);
-        emit COIL.CouponRedeemed(couponHash, user1, amount);
+        emit CouponRedeemed(couponHash, user1, amount);
 
         // Redeem coupon
         vm.prank(user1);
