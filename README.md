@@ -107,7 +107,7 @@ cp .env.example .env
 ```
 
 Fill in your values in `.env`:
-- `CELO_RPC_URL`: RPC endpoint (mainnet: https://forno.celo.org, testnet: https://forno.celo-sepolia.celo-testnet.org)
+- `CELO_RPC_URL`: RPC endpoint
 - `DEPLOYER_PRIVATE_KEY`: Deployer wallet private key (with 0x prefix)
 - `OWNER_ADDRESS`: Address that will receive admin roles
 - `WELCOME_BONUS_DISTRIBUTOR_ADDRESS`: Address for welcome bonus distributor role
@@ -127,10 +127,6 @@ forge verify-contract \
   src/COIL.sol:COIL \
   --constructor-args $(cast abi-encode "constructor(address,address)" <OWNER_ADDRESS> <WELCOME_BONUS_DISTRIBUTOR_ADDRESS>)
 ```
-
-Blockscout URLs:
-- Mainnet: https://celoscan.io/api/
-- Testnet: https://celo-sepolia.blockscout.com/api/
 
 ### Cast
 
