@@ -44,6 +44,14 @@ An ERC20 token contract designed for a community local economy, enabling anonymo
 - `getRemainingGovernanceAllocation()`: Check remaining governance allocation
 
 
+## Requirements
+
+Foundry v1.0+ required for Prague EVM support.
+
+```shell
+foundryup
+```
+
 ## Foundry
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
@@ -91,10 +99,33 @@ $ forge snapshot
 $ anvil
 ```
 
-### Deploy
+## Deployment
 
+### Setup Environment
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+cp .env.example .env
+```
+
+Fill in your values in `.env`:
+- `CELO_RPC_URL`: RPC endpoint
+- `DEPLOYER_PRIVATE_KEY`: Deployer wallet private key (with 0x prefix)
+- `OWNER_ADDRESS`: Address that will receive admin roles
+- `WELCOME_BONUS_DISTRIBUTOR_ADDRESS`: Address for welcome bonus distributor role
+
+### Deploy
+```shell
+source .env && forge script script/Deploy.s.sol --rpc-url $CELO_RPC_URL --broadcast
+```
+
+### Verify Contract
+```shell
+forge verify-contract \
+  --rpc-url $CELO_RPC_URL \
+  --verifier blockscout \
+  --verifier-url 'https://blockscout-url/api/' \
+  <DEPLOYED_ADDRESS> \
+  src/COIL.sol:COIL \
+  --constructor-args $(cast abi-encode "constructor(address,address)" <OWNER_ADDRESS> <WELCOME_BONUS_DISTRIBUTOR_ADDRESS>)
 ```
 
 ### Cast
