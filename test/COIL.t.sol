@@ -7,7 +7,6 @@ import {COIL} from "../src/COIL.sol";
 contract COILTest is Test {
     COIL public token;
     address public owner;
-    address public welcomeBonusDistributor;
     address public user1;
     address public user2;
     address public pauser;
@@ -18,11 +17,9 @@ contract COILTest is Test {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant COUPON_CREATOR_ROLE = keccak256("COUPON_CREATOR_ROLE");
-    bytes32 public constant WELCOME_BONUS_DISTRIBUTOR_ROLE = keccak256("WELCOME_BONUS_DISTRIBUTOR_ROLE");
 
     function setUp() public {
         owner = makeAddr("owner");
-        welcomeBonusDistributor = makeAddr("welcomeBonusDistributor");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
         pauser = makeAddr("pauser");
@@ -30,7 +27,7 @@ contract COILTest is Test {
         couponCreator = makeAddr("couponCreator");
 
         vm.startPrank(owner);
-        token = new COIL(owner, welcomeBonusDistributor);
+        token = new COIL(owner);
 
         // Grant additional roles for testing
         token.grantRole(PAUSER_ROLE, pauser);
@@ -52,13 +49,12 @@ contract COILTest is Test {
         assertTrue(token.hasRole(MINTER_ROLE, owner));
         assertTrue(token.hasRole(PAUSER_ROLE, owner));
         assertTrue(token.hasRole(COUPON_CREATOR_ROLE, owner));
-        assertTrue(token.hasRole(WELCOME_BONUS_DISTRIBUTOR_ROLE, welcomeBonusDistributor));
     }
 
     // ===== WELCOME BONUS DISTRIBUTION TESTS =====
     function test_DistributeWelcomeBonus_Success() public {
-        vm.prank(welcomeBonusDistributor);
-        token.distributeWelcomeBonus(user1);
+        vm.prank(user1);
+        token.distributeWelcomeBonus();
 
         assertEq(token.balanceOf(user1), token.WELCOME_BONUS_AMOUNT());
         assertTrue(token.hasReceivedWelcomeBonus(user1));
@@ -69,29 +65,17 @@ contract COILTest is Test {
         vm.expectEmit(true, false, false, true);
         emit COIL.WelcomeBonusDistributed(user1, token.WELCOME_BONUS_AMOUNT());
 
-        vm.prank(welcomeBonusDistributor);
-        token.distributeWelcomeBonus(user1);
+        vm.prank(user1);
+        token.distributeWelcomeBonus();
     }
 
     function test_DistributeWelcomeBonus_RevertIfAlreadyReceived() public {
-        vm.startPrank(welcomeBonusDistributor);
-        token.distributeWelcomeBonus(user1);
+        vm.startPrank(user1);
+        token.distributeWelcomeBonus();
 
         vm.expectRevert("User already received welcome bonus");
-        token.distributeWelcomeBonus(user1);
+        token.distributeWelcomeBonus();
         vm.stopPrank();
-    }
-
-    function test_DistributeWelcomeBonus_RevertIfNotAuthorized() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                bytes4(keccak256("AccessControlUnauthorizedAccount(address,bytes32)")),
-                user1,
-                WELCOME_BONUS_DISTRIBUTOR_ROLE
-            )
-        );
-        vm.prank(user1);
-        token.distributeWelcomeBonus(user2);
     }
 
     function test_DistributeWelcomeBonus_RevertWhenPaused() public {
@@ -99,8 +83,8 @@ contract COILTest is Test {
         token.pause();
 
         vm.expectRevert(abi.encodeWithSelector(bytes4(keccak256("EnforcedPause()"))));
-        vm.prank(welcomeBonusDistributor);
-        token.distributeWelcomeBonus(user1);
+        vm.prank(user1);
+        token.distributeWelcomeBonus();
     }
 
     function test_DistributeWelcomeBonus_RevertIfAllocationExceeded() public {
@@ -117,14 +101,14 @@ contract COILTest is Test {
 
         assertEq(token.welcomeBonusDistributed(), almostFullAllocation);
 
-        vm.prank(welcomeBonusDistributor);
-        token.distributeWelcomeBonus(user1);
+        vm.prank(user1);
+        token.distributeWelcomeBonus();
 
         assertEq(token.welcomeBonusDistributed(), allocation);
 
         vm.expectRevert("Welcome bonus allocation exceeded");
-        vm.prank(welcomeBonusDistributor);
-        token.distributeWelcomeBonus(user2);
+        vm.prank(user2);
+        token.distributeWelcomeBonus();
     }
 
     // ===== ORGS DISTRIBUTION TESTS =====
@@ -379,8 +363,8 @@ contract COILTest is Test {
 
     // ===== TRANSFER TESTS =====
     function test_Transfer_RevertWhenPaused() public {
-        vm.prank(welcomeBonusDistributor);
-        token.distributeWelcomeBonus(user1);
+        vm.prank(user1);
+        token.distributeWelcomeBonus();
 
         vm.prank(pauser);
         token.pause();
@@ -393,8 +377,8 @@ contract COILTest is Test {
     function test_Transfer_SuccessWhenNotPaused() public {
         uint256 transferAmount = 100 * 10 ** 18;
 
-        vm.prank(welcomeBonusDistributor);
-        token.distributeWelcomeBonus(user1);
+        vm.prank(user1);
+        token.distributeWelcomeBonus();
 
         vm.prank(user1);
         token.transfer(user2, transferAmount);
@@ -424,8 +408,8 @@ contract COILTest is Test {
         uint256 initialAllocation = token.WELCOME_BONUS_ALLOCATION();
         assertEq(token.getRemainingWelcomeBonusAllocation(), initialAllocation);
 
-        vm.prank(welcomeBonusDistributor);
-        token.distributeWelcomeBonus(user1);
+        vm.prank(user1);
+        token.distributeWelcomeBonus();
 
         uint256 bonusAmount = token.WELCOME_BONUS_AMOUNT();
         assertEq(token.getRemainingWelcomeBonusAllocation(), initialAllocation - bonusAmount);

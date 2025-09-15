@@ -19,7 +19,6 @@ contract COIL is ERC20Capped, AccessControl, Pausable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant COUPON_CREATOR_ROLE = keccak256("COUPON_CREATOR_ROLE");
-    bytes32 public constant WELCOME_BONUS_DISTRIBUTOR_ROLE = keccak256("WELCOME_BONUS_DISTRIBUTOR_ROLE");
 
     uint256 public constant WELCOME_BONUS_ALLOCATION = 300_000_000 * 10 ** 18;
     uint256 public constant ORGS_ALLOCATION = 200_000_000 * 10 ** 18;
@@ -38,41 +37,32 @@ contract COIL is ERC20Capped, AccessControl, Pausable {
     event WelcomeBonusDistributed(address indexed user, uint256 amount);
     event CouponCreated(bytes32 indexed couponHash, uint256 amount);
     event CouponRedeemed(bytes32 indexed couponHash, address indexed user, uint256 amount);
-    event WelcomeBonusDistributorChanged(address indexed oldDistributor, address indexed newDistributor);
     event OrgsDistributed(address indexed user, uint256 amount);
     event GovernanceDistributed(address indexed user, uint256 amount);
 
-    constructor(address _owner, address _welcomeBonusDistributor)
-        ERC20("COIL Token", "COIL")
-        ERC20Capped(1_000_000_000 * 10 ** 18)
-    {
+    constructor(address _owner) ERC20("COIL Token", "COIL") ERC20Capped(1_000_000_000 * 10 ** 18) {
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
         _grantRole(MINTER_ROLE, _owner);
         _grantRole(PAUSER_ROLE, _owner);
         _grantRole(COUPON_CREATOR_ROLE, _owner);
-        _grantRole(WELCOME_BONUS_DISTRIBUTOR_ROLE, _welcomeBonusDistributor);
-
-        emit WelcomeBonusDistributorChanged(address(0), _welcomeBonusDistributor);
     }
 
     /**
-     * @notice Distribute welcome bonus to new users
-     * @param to The address to receive the welcome bonus
-     * @dev Can only be called by the welcome bonus distributor
+     * @notice Distribute welcome bonus to new users. Mints tokens directly to the sender.
+     * @dev Each user can only receive the welcome bonus once. Total distribution is capped.
      */
-    function distributeWelcomeBonus(address to) external whenNotPaused onlyRole(WELCOME_BONUS_DISTRIBUTOR_ROLE) {
-        require(to != address(0), "Invalid address");
-        require(!hasReceivedWelcomeBonus[to], "User already received welcome bonus");
+    function distributeWelcomeBonus() external whenNotPaused {
+        require(!hasReceivedWelcomeBonus[msg.sender], "User already received welcome bonus");
         require(
             welcomeBonusDistributed + WELCOME_BONUS_AMOUNT <= WELCOME_BONUS_ALLOCATION,
             "Welcome bonus allocation exceeded"
         );
 
-        hasReceivedWelcomeBonus[to] = true;
+        hasReceivedWelcomeBonus[msg.sender] = true;
         welcomeBonusDistributed += WELCOME_BONUS_AMOUNT;
 
-        _mint(to, WELCOME_BONUS_AMOUNT);
-        emit WelcomeBonusDistributed(to, WELCOME_BONUS_AMOUNT);
+        _mint(msg.sender, WELCOME_BONUS_AMOUNT);
+        emit WelcomeBonusDistributed(msg.sender, WELCOME_BONUS_AMOUNT);
     }
 
     /**
