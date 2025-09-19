@@ -13,7 +13,6 @@ contract COILTest is Test {
     address public minter;
     address public couponCreator;
 
-    // Role constants for testing
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant COUPON_CREATOR_ROLE = keccak256("COUPON_CREATOR_ROLE");
@@ -29,7 +28,6 @@ contract COILTest is Test {
         vm.startPrank(owner);
         token = new COIL(owner);
 
-        // Grant additional roles for testing
         token.grantRole(PAUSER_ROLE, pauser);
         token.grantRole(MINTER_ROLE, minter);
         token.grantRole(COUPON_CREATOR_ROLE, couponCreator);
@@ -44,7 +42,6 @@ contract COILTest is Test {
         assertEq(token.cap(), 1_000_000_000 * 10 ** 18);
         assertEq(token.totalSupply(), 0);
 
-        // Check role assignments
         assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), owner));
         assertTrue(token.hasRole(MINTER_ROLE, owner));
         assertTrue(token.hasRole(PAUSER_ROLE, owner));
@@ -248,41 +245,26 @@ contract COILTest is Test {
         uint256 amount = 50 * 10 ** 18;
         bytes32 couponHash = keccak256(abi.encodePacked(couponCode));
 
-        // Create coupon
         vm.prank(couponCreator);
         token.updateCoupon(couponCode, amount);
 
         vm.expectEmit(true, true, false, true);
         emit COIL.CouponRedeemed(couponHash, user1, amount);
 
-        // Redeem coupon
         vm.prank(user1);
         token.redeem(couponCode);
 
         assertEq(token.balanceOf(user1), amount);
-        assertTrue(token.couponRedeemed(couponHash, user1));
-        assertTrue(token.hasRedeemedCoupon(couponCode, user1));
+
+        vm.prank(user1);
+        token.redeem(couponCode);
+        assertEq(token.balanceOf(user1), amount * 2);
     }
 
     function test_RedeemCoupon_RevertIfInvalidCoupon() public {
         vm.expectRevert("Invalid coupon");
         vm.prank(user1);
         token.redeem("INVALID");
-    }
-
-    function test_RedeemCoupon_RevertIfAlreadyRedeemed() public {
-        string memory couponCode = "GET50";
-        uint256 amount = 50 * 10 ** 18;
-
-        vm.prank(couponCreator);
-        token.updateCoupon(couponCode, amount);
-
-        vm.prank(user1);
-        token.redeem(couponCode);
-
-        vm.expectRevert("Coupon already redeemed by user");
-        vm.prank(user1);
-        token.redeem(couponCode);
     }
 
     function test_RedeemCoupon_RevertWhenPaused() public {
@@ -307,7 +289,6 @@ contract COILTest is Test {
         vm.prank(couponCreator);
         token.updateCoupon(couponCode, amount);
 
-        // Multiple users can redeem the same coupon
         vm.prank(user1);
         token.redeem(couponCode);
 
@@ -388,22 +369,6 @@ contract COILTest is Test {
     }
 
     // ===== VIEW FUNCTION TESTS =====
-    function test_HasRedeemedCoupon() public {
-        string memory couponCode = "GET50";
-        uint256 amount = 50 * 10 ** 18;
-
-        vm.prank(couponCreator);
-        token.updateCoupon(couponCode, amount);
-
-        assertFalse(token.hasRedeemedCoupon(couponCode, user1));
-
-        vm.prank(user1);
-        token.redeem(couponCode);
-
-        assertTrue(token.hasRedeemedCoupon(couponCode, user1));
-        assertFalse(token.hasRedeemedCoupon(couponCode, user2));
-    }
-
     function test_GetRemainingWelcomeBonusAllocation() public {
         uint256 initialAllocation = token.WELCOME_BONUS_ALLOCATION();
         assertEq(token.getRemainingWelcomeBonusAllocation(), initialAllocation);
@@ -460,8 +425,6 @@ contract COILTest is Test {
         token.redeem(couponCode);
 
         assertEq(token.balanceOf(user1), amount);
-        assertTrue(token.couponRedeemed(couponHash, user1));
-        assertTrue(token.hasRedeemedCoupon(couponCode, user1));
     }
 
     // ===== CONSTANTS TESTS =====

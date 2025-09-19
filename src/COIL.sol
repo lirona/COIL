@@ -32,7 +32,6 @@ contract COIL is ERC20Capped, AccessControl, Pausable {
     mapping(address => bool) public hasReceivedWelcomeBonus;
 
     mapping(bytes32 couponHash => uint256 amount) public coupons;
-    mapping(bytes32 couponHash => mapping(address => bool)) public couponRedeemed;
 
     event WelcomeBonusDistributed(address indexed user, uint256 amount);
     event CouponCreated(bytes32 indexed couponHash, uint256 amount);
@@ -119,9 +118,6 @@ contract COIL is ERC20Capped, AccessControl, Pausable {
         bytes32 couponHash = keccak256(abi.encodePacked(couponCode));
         uint256 couponAmount = coupons[couponHash];
         require(couponAmount != 0, "Invalid coupon");
-        require(!couponRedeemed[couponHash][msg.sender], "Coupon already redeemed by user");
-
-        couponRedeemed[couponHash][msg.sender] = true;
 
         _mint(msg.sender, couponAmount);
         emit CouponRedeemed(couponHash, msg.sender, couponAmount);
@@ -146,17 +142,6 @@ contract COIL is ERC20Capped, AccessControl, Pausable {
      */
     function _update(address from, address to, uint256 amount) internal override whenNotPaused {
         super._update(from, to, amount);
-    }
-
-    /**
-     * @notice Check if user has redeemed a specific coupon TODO remove if using hashed for updateCoupon
-     * @param couponCode The coupon code to check
-     * @param user The address to check
-     * @return True if the user has redeemed the coupon, false otherwise
-     */
-    function hasRedeemedCoupon(string calldata couponCode, address user) external view returns (bool) {
-        bytes32 couponHash = keccak256(abi.encodePacked(couponCode));
-        return couponRedeemed[couponHash][user];
     }
 
     /**
